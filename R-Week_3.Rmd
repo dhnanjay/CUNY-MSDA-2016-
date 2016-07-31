@@ -1,0 +1,74 @@
+---
+title: "R-Week-3"
+author: "Dhananjay Kumar"
+date: "July 31, 2016"
+output: html_document
+---
+
+
+#Load RCurl Library to load URL dataset
+library(RCurl)
+
+#Load Plyr library for splitting and data manipulation
+library(plyr)
+
+URL <- "https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"
+x <- getURL(URL)
+#output csv file to out2 dataframe without a header row
+out2 <- read.csv(textConnection(x), header=FALSE)
+View(out2)
+#write dataset to a a csv file
+write.csv(out2, file='mushroom.csv', row.names=FALSE)
+
+newdata1 <- subset(out2,select=c(V1,V2,V6,V12,V17,V22))
+View(newdata1)
+
+newdata2 <- rename(newdata1, c("V1"="Type", "V2"="Cap_shape", "V6"="odor", "V12"="stalk_root", "V17"="veil_type", "V22"="population")) 
+View(newdata2)
+
+#just pick mushrooms that are poisonous and are solitary in the population
+newdata3 <-subset(newdata2, Type=="p" & population =="y" )
+View(newdata3)
+
+newdata3$Type <- as.character(newdata3$Type)
+newdata3$Type[newdata3$Type == "p"] <- "poisonous"
+
+newdata3$Cap_shape <- as.character(newdata3$Cap_shape)
+newdata3$Cap_shape[newdata3$Cap_shape == "b"] <- "bell"
+newdata3$Cap_shape[newdata3$Cap_shape == "c"] <- "conical"
+newdata3$Cap_shape[newdata3$Cap_shape == "x"] <- "convex"
+newdata3$Cap_shape[newdata3$Cap_shape == "f"] <- "flat"
+newdata3$Cap_shape[newdata3$Cap_shape == "k"] <- "knobbed"
+newdata3$Cap_shape[newdata3$Cap_shape == "s"] <- "sunken"
+
+newdata3$odor <- as.character(newdata3$odor)
+newdata3$odor[newdata3$odor == "a"] <- "almond"
+newdata3$odor[newdata3$odor == "l"] <- "anise"
+newdata3$odor[newdata3$odor == "c"] <- "creosote"
+newdata3$odor[newdata3$odor == "y"] <- "fishy"
+newdata3$odor[newdata3$odor == "f"] <- "foul"
+newdata3$odor[newdata3$odor == "m"] <- "musty"
+newdata3$odor[newdata3$odor == "n"] <- "none"
+newdata3$odor[newdata3$odor == "p"] <- "pungent"
+newdata3$odor[newdata3$odor == "s"] <- "spicy"
+
+
+newdata3$stalk_root <- as.character(newdata3$stalk_root)
+newdata3$stalk_root[newdata3$stalk_root == "b"] <- "bulbous"
+newdata3$stalk_root[newdata3$stalk_root == "c"] <- "club"
+newdata3$stalk_root[newdata3$stalk_root == "u"] <- "cup"
+newdata3$stalk_root[newdata3$stalk_root == "e"] <- "equal"
+newdata3$stalk_root[newdata3$stalk_root == "z"] <- "rhizomorphs"
+newdata3$stalk_root[newdata3$stalk_root == "r"] <- "rooted"
+newdata3$stalk_root[newdata3$stalk_root == "?"] <- "missing"
+
+newdata3$veil_type  <- as.character(newdata3$veil_type)
+newdata3$veil_type[newdata3$veil_type == "p"] <- "partial"
+newdata3$veil_type[newdata3$veil_type == "u"] <- "universal"
+
+newdata3$population  <- as.character(newdata3$population)
+newdata3$population[newdata3$population == "y"] <- "solitary"
+ 
+#write transformed mushroom dataset to a a csv file
+write.csv(newdata3, file='mushmodi.csv')
+
