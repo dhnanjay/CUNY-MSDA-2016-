@@ -1,0 +1,162 @@
+---
+title: 'R-Week-4 : Data Analysis'
+author: "Dhananjay Kumar"
+date: "August 6, 2016"
+output: html_document
+---
+# R Week 4 - Data Analysis - Water Hardness and Mortality
+
+Load libraries and retreive data from remote URL
+```{r}
+# Load libraries RCurl -> for loading data from URL, plotly -> for making plots interactive, ggrepel -> for Text Labels
+library(RCurl)
+library(plotly)
+library(ggrepel)
+
+# Load Data from Remote URL
+rData <- getURL('http://vincentarelbundock.github.io/Rdatasets/csv/HSAUR/water.csv')
+
+# Read CSV data in lData (local data), test connection , header by default is true
+lData <- read.csv(textConnection(rData))
+
+# View Data
+knitr::kable(lData)
+
+# Data Summary
+summary(lData)
+```
+
+
+#### Create  Scatter Plot
+
+```{r}
+# Scatter Diagram 1
+b <- ggplot(lData, aes(x = mortality , y = hardness)) 
+b + geom_point(aes(color = hardness, size = mortality, shape = factor(location))) +  scale_colour_gradient(low = "purple")
+# Lets make it interactive
+ggplotly()
+
+```
+
+
+In the above scatter plot we can see the clear distinction between triangles and circle. The traingles have higher Hardness rate and the Circles have a higher mortality rate. 
+
+#### Create North South Scatter Plot
+```{r}
+# Scatter Diagram 2
+ggplot(subset(lData, location %in% c("North", "South")),
+       aes(x=mortality, y=hardness, color=location)) + geom_point() +  geom_smooth() + geom_text_repel(aes(label=town), size = 3)
+```
+
+
+In the above scatter plot we can very well see that the North has a higher mortality rate than the South. We can also see that the twon Ipswich has the lowest mortality rate (1096) and the town Salford has the highest mortality rate of 1987.
+
+#### Mortality Histogram
+```{r}
+# Create Histogram for Mortality
+ggplot(data=lData, aes(lData$mortality)) +
+  geom_histogram(aes(y =..density.., fill=..count..), breaks=seq(1000, 2000, by = 100), alpha = .5 ) +
+  geom_density(col=1) + labs(title="Histogram for Mortality", x="Mortality", y="Count")  +
+  geom_vline(aes(xintercept=mean(mortality)), color="blue", linetype="dashed", size=1)
+
+```
+The above histogram shows that the maximum frequency of Mortality Rate is between  1300 to 1600. the dashed blue line represent Mean of the distribution.
+
+
+#### Water Hardness Histogram
+```{r}
+ggplot(data=lData, aes(lData$hardness)) +
+  geom_histogram(aes(y =..density.., fill=..count..), breaks=seq(0, 150, by = 10), alpha = .5 ) +
+  geom_density(col=2) + labs(title="Histogram for Water Hardness", x="Water Hardness", y="Count") +
+  geom_vline(aes(xintercept=mean(hardness)), color="blue", linetype="dashed", size=1)
+```
+As we can see in the histogram, the frequncy of water hardness between 10 to 20 is maximum and the dashed blue line represent Mean of the distribution.
+
+#### Mortality Rate comparison between North and South Location
+```{r}
+# North vs South Mortality Histogram
+ggplot(lData, aes(x=mortality, color=location, fill=location)) +
+  geom_histogram(position="identity",breaks=seq(1000, 2000, by = 100), alpha=0.5)+
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+  labs(title="Mortality histogram plot",x="Mortality", y = "Count")
+# Lets make it interactive
+ggplotly()
+```
+The Mortality Rate for South Region lies between 1000 to 1700 whereas the Mortslity Rate of North Region lies between 1300 to 2000.
+
+#### Water Hardness comparison between North and South Location
+```{r}
+# North vs South Water Hardness Histogram
+ggplot(lData, aes(x=hardness, color=location, fill=location)) +
+  geom_histogram(position="identity",breaks=seq(0, 150, by = 10), alpha=0.5)+
+  scale_color_manual(values=c("#999999", "#BEE181", "#5B6BAA"))+
+  scale_fill_manual(values=c("#999999", "#BEE181", "#5B6BAA"))+
+  labs(title="Water Hardness histogram plot",x="hardness", y = "Count")
+# Lets make it interactive
+ggplotly()
+
+```
+The North region has highest density of hardness water rate with low value whereas the South region has Water Hardness rate with high value.
+
+####  Bar Plot Hardness vs Mortality
+```{r}
+ggplot(lData, aes(x=mortality, y=hardness))  + geom_bar(stat = "identity") + geom_smooth()
+```
+The above bar plot reveals that as the Water Hardness rate is inversely proportional to Mortality Rate i.e as hardness decreases, mortality increases.
+
+#### Mortality Rate North vs South
+```{r}
+# Dotplot: Grouped Sorted and Colored
+# Sort by mortality, group and color by location
+xm <- lData[order(lData$mortality),] # sort by mortality
+xm$loc <- factor(xm$location) # it must be a factor
+xm$color[xm$location=="North"] <- "red"
+xm$color[xm$location=="South"] <- "blue"
+dotchart(xm$mortality,labels=row.names(xm),cex=.50,groups= xm$location,
+         main="Mortality rates grouped by location",
+         xlab="Mortality rate", gcolor="green", color=xm$color)
+
+```
+
+
+#### Water Hardness North vs South
+```{r}
+# Dotplot: Grouped Sorted and Colored
+# Sort by hardness, group and color by location
+wHard <- lData[order(lData$hardness),] # sort by hardness
+wHard$loc <- factor(wHard$location) # it must be a factor
+wHard$color[wHard$location=="North"] <- "red"
+wHard$color[wHard$location=="South"] <- "blue"
+dotchart(wHard$hardness,labels=row.names(xm),cex=.50,groups= wHard$location,
+         main="Water Hardness grouped by location",
+         xlab="Water Hardness", gcolor="Gray", color=wHard$color)
+```
+
+#### Mortality Rate Boxplot based on Location
+```{r}
+#Mortality Boxplot based on Location
+boxplot(lData$mortality~lData$location,data=lData, main="Mortality data", 
+        xlab="Location", ylab="Mortality data")
+```
+The boxplot clearly shows Mortality Rate is comparatively higher in North Region when compared with South. Observe the Median of the both the Region.
+
+The middle 50% of the Mortality Rate in North Region lies between 1550 to 1700, whereas the median of the data of North Region is little higher than 1600. As observed, we can see only one data point as outlier.
+
+The median of the moertality rate in South Region is littler higher than 1300. The middle 50% lies between 1250 to 1500.
+
+#### Water Hardness Rate Boxplot based on Location
+```{r}
+# Water Hardness based on Location
+boxplot(lData$hardness~lData$location,data=lData, main="Water Hardness", 
+        xlab="Location", ylab="Water Hardness")
+```
+Water Hardness in the North region is skewed right i.e most of the values are greater than median, whereas Water Hardness in the South region is skewed left i.e most of the values are lower than the median.
+
+
+#### Water Hardness Rate vs Mortality Rate Boxplot based on Location
+```{r}
+#  Hardness vs Mortality Boxplot based on Location
+ggplot(lData, aes(x=mortality, y=hardness, color=location)) + geom_boxplot()
+```
+
