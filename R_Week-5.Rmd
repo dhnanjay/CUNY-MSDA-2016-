@@ -1,0 +1,164 @@
+---
+title: "R-Week-5"
+author: "Dhananjay Kumar"
+date: "August 10, 2016"
+output: html_document
+---
+
+# R Week 5 - Final Project
+
+### Objective: I want to analyse hflight data with the objective of finding any relationship between Arrival Delay and Distance. I also want to find the most frequently delayed (arrival delay) carrier, the month in which most arrival delay happens, top 5 destinations and relationship between Departure Delay and Arrival Delay. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(hflights)
+library(plotly)
+```
+
+#### Select columns from original dataset and create a new dataset out of it.
+```{r}
+# Select columns from hflight and create a new datset
+newData <- subset(hflights, 
+                  select=c("Month", "DayOfWeek", "UniqueCarrier", "ArrDelay","DepDelay", "Dest", "Distance"),
+                  na.rm = TRUE)
+```
+
+#### Transform data by renaming the Month column data into meaningful character values.
+```{r}
+newData$Month <- replace(newData$Month, newData$Month=="1", "January")
+newData$Month <- replace(newData$Month, newData$Month=="2", "February")
+newData$Month <- replace(newData$Month, newData$Month=="3", "March")
+newData$Month <- replace(newData$Month, newData$Month=="4", "April")
+newData$Month <- replace(newData$Month, newData$Month=="5", "May")
+newData$Month <- replace(newData$Month, newData$Month=="6", "June")
+newData$Month <- replace(newData$Month, newData$Month=="7", "July")
+newData$Month <- replace(newData$Month, newData$Month=="8", "August")
+newData$Month <- replace(newData$Month, newData$Month=="9", "September")
+newData$Month <- replace(newData$Month, newData$Month=="10", "October")
+newData$Month <- replace(newData$Month, newData$Month=="11", "November")
+newData$Month <- replace(newData$Month, newData$Month=="12", "December")
+```
+
+#### Create two subset, one for Short distanced and another one for Long distanced Flights. I have used median value to differentiate between these two subset. So anything less than/equal to Median is Short Distance and more than Median is Long Distanced Flights. I have also added additional column "FlightType" into these datasets. 
+```{r}
+summary(newData$Distance)
+sDistDelay <- subset(newData, ArrDelay > 0 & Distance < 810)
+sDistDelay$FlightType <- "Short Distance";
+nrow(sDistDelay)
+lDistDelay <- subset(newData, ArrDelay > 0 & Distance > 809)
+lDistDelay$FlightType <- "Long Distance";
+nrow(lDistDelay)
+```
+
+#### I have created another subsets by merging the Short and Long Distance DataSet. The new dataset has all the records for Delayed (Arrival Delay) Flights and will be helpful in overall analyses.The additional column FlightType can be used to compare data between Long Distance and Short Distance.
+```{r}
+totalDelay <- rbind(sDistDelay, lDistDelay)
+```
+
+#### 1.Lets analyse the Histogram Chart of Short Distance Flights and see which carrier is most frequently delayed on Arrival delay parameter.
+```{r}
+ggplot(sDistDelay, aes(x=UniqueCarrier, y=frequency(UniqueCarrier)))  + geom_bar(stat = "identity")  +
+  labs(title="Arrival Delay for Short Distance Flights based on different Carriers", x="Carrier", y="Count") 
+```
+
+#### From the above histogram chart, it is observed that the carrier which is most frequently delayed for Short distanced flights is ExpressJet Airlines (XE). 
+
+
+#### 2.Similarly, lets analyse histogram for Long Distanced Flights
+```{r}
+ggplot(lDistDelay, aes(x=UniqueCarrier, y=frequency(UniqueCarrier))) + geom_bar(stat = "identity")  +
+  labs(title="Arrival Delay for Long Distance Flights based on different Carriers", x="Carrier", y="Count") 
+```
+
+#### From the above histogram chart, it is observed that the carrier which is most frequently delayed for long distanced flights is CO. 
+
+#### 3.Lets compare Arrival Delay of Long distance vs Short distance flights
+```{r}
+qplot(ArrDelay, data = totalDelay, geom = "freqpoly", colour = FlightType, xlim =c(-20, 200)) +
+  labs(title="Long Distance vs Short Distance", x="Arrival Delay", y="Count") 
+```
+
+#### From the graph we can see that there is not much difference between the distribution of Long Distance Arrival Delay vs short distance Arrival Delay, infact they both are very similar. Hence we can say that distance does not affect the Arrival Delay in any significant way.
+
+#### 4.Lets find out in which Month , most Arrival Delay happens for Short distanced flights.
+```{r}
+sDistDelay$Month <- factor(sDistDelay$Month,levels=month.name)
+sDistDelay = sDistDelay[order(sDistDelay$Month,decreasing=FALSE),]
+# Which month has most delayed flights for Short Distance
+ggplot(sDistDelay, aes(x=Month, y=frequency(Month)))  + geom_bar(stat = "identity")  + labs( x="Month", y="Count") 
+```
+
+#### May is the month where most of the Arrival Delay happens for a short distanced flights
+
+#### 5.Lets find out in which Month , most Arrival Delay happens for Long distanced flights.
+```{r}
+lDistDelay$Month <- factor(lDistDelay$Month,levels=month.name)
+lDistDelay = lDistDelay[order(lDistDelay$Month,decreasing=FALSE),]
+# Which month has most delayed flights for Long Distance
+ggplot(lDistDelay, aes(x=Month, y=frequency(Month)))  + geom_bar(stat = "identity") + labs( x="Month", y="Count") 
+```
+
+#### June is the month where most of the Arrival Delay happens for a long distanced flights
+
+#### 6.Which Airline is responsible for most frequent Arrival Delay?
+```{r}
+qplot(ArrDelay, data=totalDelay, geom='histogram', binwidth = 5, xlim =c(-25, 200), main='Arrival Delays by Airlines') +
+  facet_wrap(~UniqueCarrier) + labs(x = 'Arrival Delay', y = "Count")
+```
+
+#### XE followed by CO are the carriers responsible for Most Arrival Delay  
+
+#### 7.In which month, most frequent Arrival Delay happens?
+```{r}
+totalDelay$Month <- factor(totalDelay$Month,levels=month.name)
+totalDelay = totalDelay[order(totalDelay$Month,decreasing=FALSE),]
+# Histograms to compare Arrival Delay by Month
+qplot(ArrDelay, data=totalDelay, geom='histogram', binwidth = 5, xlim =c(-25, 200), main='Arrival Delays by Month') +
+  facet_wrap(~Month) + labs(x = 'Arrival Delay', y = "Count")
+```
+
+#### June is the most in which most frequently Arrival Delay happens.
+
+#### To analyse further, I concentrated my analyses on top 5 destination
+```{r}
+# Get Top 5 Destination
+topDest <- data.frame(table(newData$Dest))
+topDest <- subset(topDest, Freq > 6000)
+head(topDest)
+
+# Filter Data by Top 5 Destination
+topdest <- subset(newData, Dest == 'ATL' | Dest == 'DAL' | Dest == 'DFW' | Dest == 'LAX' | 
+                    Dest == 'MSY' )
+```
+
+#### 8.Density chart comparison between top 5 destination showing Arrival Delay of differnt carriers
+```{r}
+# Density chart comparison between top 5 destination showing Arrival Delay of differnt carriers
+qplot(ArrDelay, data=topdest, geom='density', color=UniqueCarrier, xlim =c(-25, 150)) + facet_grid(Dest ~.)
+ggplotly()
+```
+
+#### From the above density chart we can observe the most time bound and the most frequently delayed Airline for the top 5 destination from Houston. For example, for Atlanta, FL airline is most time bound and XE is most frequently delayed.
+
+
+#### 9.Which Top 5 destination has most frequency of delayed Arrival?
+```{r}
+# Histograms to compare Arrival Delay by Top 5 Destination
+topdest2 <- subset(totalDelay, Dest == 'ATL' | Dest == 'DAL' | Dest == 'DFW' | Dest == 'LAX' | 
+                     Dest == 'MSY' )
+qplot(ArrDelay, data=topdest2, geom='histogram', binwidth = 5, xlim =c(0, 150), main='Arrival Delays by Destination') +
+  facet_wrap(~Dest) + labs(x = 'Arrival Delay', y = "Count")
+```
+
+
+#### From the above Histogram we can say that, Dallas(DAL) airport has most frequency of delayed arrival of flights.
+
+#### 10.Relationship between Arrival Delay and Departure Delay by Unique Carrier
+```{r}
+# Scatter Chart to show relationship between Arrival Delay vs Departure Delay
+b2 <- ggplot(newData, aes(x = DepDelay , y = ArrDelay)) 
+b2 + geom_point(aes(color = UniqueCarrier)) + geom_smooth() + 
+  labs(title="Departure vs Arrival Delay", x="Departure Delay", y="Arrival Delay")
+```
+
+#### From the above scatter chart we can conclude that there is a strong (alomost linear) positive correlation between Arrival Delay and Departure Delay
